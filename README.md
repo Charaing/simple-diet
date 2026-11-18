@@ -12,7 +12,7 @@
 
 웹에서 바로: GitHub Pages 주소로 열기
 
-다이어트신 칼로리 사전 검색까지 쓰려면 내 컴퓨터에서:
+칼로리 사전 검색은 Cloudflare Worker(`worker/`)로 돼서 따로 켤 건 없어요. 내 컴퓨터에서 직접 열고 싶으면:
 
 ```bash
 python server.py
@@ -20,7 +20,7 @@ python server.py
 
 → http://localhost:5178 (Windows는 `start.bat` 더블클릭)
 
-`server.py`는 앱에서 검색할 때만 칼로리 사전에 한 번씩 물어보고(1초에 한 번 이하), 결과를 메모리에 캐시합니다. GitHub Pages에서는 이 검색 칸이 보이지 않습니다.
+Worker와 `server.py`는 앱에서 검색할 때만 칼로리 사전에 한 번씩 물어보고 결과를 캐시합니다. Worker 배포 방법은 `worker/README.md`.
 
 ## 데이터 · 출처
 
