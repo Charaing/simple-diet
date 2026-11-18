@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<title>식단</title>
+<style>
+@font-face{font-family:"Pretendard";src:url("fonts/PretendardVariable.woff2") format("woff2-variations"),url("fonts/PretendardVariable.woff2") format("woff2");font-weight:45 920;font-display:swap}
+:root{--bg:#0b0b0c;--card:#17171a;--fill:#232327;--fg:#f2f2f3;--sub:#8b8b93;--line:#26262b;--ov:rgba(0,0,0,.6);--r:22px}
+:root.light{--bg:#f2f3f5;--card:#fff;--fill:#f2f3f5;--fg:#191a1d;--sub:#8b8e95;--line:#ececef;--ov:rgba(0,0,0,.35)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:"Toss Product Sans","Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:16px;line-height:1.45;letter-spacing:-.2px;max-width:480px;margin:0 auto;padding:12px 16px 120px;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter-spacing:inherit}
+input{font:inherit;color:var(--fg);background:var(--fill);border:0;border-radius:14px;padding:14px 16px;width:100%;outline:none;letter-spacing:inherit;transition:box-shadow .15s}
+input:focus{box-shadow:inset 0 0 0 1.5px var(--fg)}
+input::placeholder{color:var(--sub)}
+input[type=number]::-webkit-inner-spin-button{display:none}
+.num{font-variant-numeric:tabular-nums}
+.press{transition:transform .12s,background .15s}.press:active{transform:scale(.97)}
+
+header{display:flex;align-items:center;justify-content:space-between;height:52px}
+.date{display:flex;align-items:center;gap:2px;font-size:19px;font-weight:700}
+.date button{width:36px;height:36px;border-radius:12px;color:var(--sub);font-size:20px}
+.date button:active{background:var(--card)}
+.icons{display:flex;gap:4px}
+.icon{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;color:var(--sub)}
+.icon:active{background:var(--card)}
+.icon svg{width:22px;height:22px}
+
+.card{background:var(--card);border-radius:var(--r);padding:22px 22px;margin-top:12px}
+.label{font-size:14px;color:var(--sub);font-weight:500}
+.big{font-size:42px;font-weight:700;letter-spacing:-1.2px;line-height:1.15;margin-top:4px}
+.big small{font-size:18px;font-weight:600;color:var(--sub);letter-spacing:-.3px;margin-left:4px}
+.bar{height:12px;background:var(--fill);border-radius:99px;margin:18px 0 12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--fg);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar.over i{background:repeating-linear-gradient(45deg,var(--fg) 0 6px,var(--sub) 6px 12px)}
+.msg{font-size:16px;font-weight:600}
+.meta{font-size:13px;color:var(--sub);margin-top:4px}
+
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 22px;border-radius:16px}
+.row:active{background:var(--fill)}
+.row .t{flex:1;min-width:0}
+.row .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .k{font-weight:600;white-space:nowrap}
+.row .chev{color:var(--sub)}
+.list{margin:6px -22px -10px}
+.empty{color:var(--sub);font-size:15px;padding:18px 0 6px;text-align:center}
+.wcard{display:flex;align-items:center;gap:12px;padding:20px 22px;width:100%;text-align:left}
+
+body{padding-bottom:180px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs .in{max-width:480px;margin:0 auto;display:flex}
+.tabs button{flex:1;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:600;color:var(--sub)}
+.tabs button svg{width:22px;height:22px}
+.tabs button.on{color:var(--fg)}
+.view{display:none}.view.on{display:block}
+.plan .item{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+.plan .item:last-child{border-bottom:0}
+.plan .cb{flex:none;width:26px;height:26px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.plan .cb svg{width:16px;height:16px;opacity:0;color:var(--bg);transition:opacity .15s}
+.plan .item.done .cb{background:var(--fg);border-color:var(--fg)}
+.plan .item.done .cb svg{opacity:1}
+.plan .txt{flex:1;min-width:0;text-align:left;font-size:17px;display:flex;gap:8px;align-items:baseline}
+.plan .txt .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.plan .txt .g{color:var(--sub);white-space:nowrap}
+.plan .kc{white-space:nowrap;font-weight:600;font-size:15px}
+.plan .item.done .n,.plan .item.done .g,.plan .item.done .kc{color:var(--sub);text-decoration:line-through;text-decoration-thickness:1.5px}
+.quick{display:flex;align-items:center;gap:14px;padding:13px 0;width:100%;color:var(--sub);font-size:17px;text-align:left}
+.quick .cb{border-style:dashed}
+.fab{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);width:calc(100% - 32px);max-width:448px;height:58px;border-radius:18px;background:var(--fg);color:var(--bg);font-size:17px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.fab:active{transform:translateX(-50%) scale(.98)}
+
+/* sheets */
+.ov{position:fixed;inset:0;background:var(--ov);opacity:0;pointer-events:none;transition:opacity .25s;z-index:10}
+.ov.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:480px;background:var(--card);border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));z-index:11;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);max-height:92vh;display:flex;flex-direction:column}
+.sheet.on{transform:none}
+.sheet.tall{height:92vh}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px;flex:none}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex:none}
+.sh h2{font-size:21px;font-weight:700;letter-spacing:-.5px}
+.sh button{color:var(--sub);font-size:15px;padding:6px 2px}
+.body{overflow:auto;flex:1;margin:0 -20px;padding:0 20px}
+.f{margin-bottom:14px}
+.f>label{display:block;font-size:13px;color:var(--sub);font-weight:500;margin:0 0 6px 4px}
+.cols{display:flex;gap:10px}.cols>*{flex:1;min-width:0}
+.seg{display:flex;background:var(--fill);border-radius:14px;padding:4px}
+.seg button{flex:1;height:42px;border-radius:11px;color:var(--sub);font-weight:600;transition:background .15s,color .15s}
+.seg button.on{background:var(--card);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+:root:not(.light) .seg button.on{background:#38383e}
+.cta{flex:none;height:56px;border-radius:16px;background:var(--fg);color:var(--bg);font-size:17px;font-weight:700;width:100%;margin-top:14px}
+.cta:disabled{opacity:.25}
+.ghost{flex:none;height:48px;border-radius:14px;color:var(--sub);font-weight:600;width:100%;margin-top:6px}
+.ghost.alt{margin:0;background:var(--fill);color:var(--fg);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cols .ghost.alt{width:auto;flex:1 1 0}
+.cols #dsBtn{flex:1.7 1 0;display:block;line-height:48px;text-align:center}
+.ghost.alt:active{transform:scale(.97)}
+.unitIn{position:relative}
+.unitIn span{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none}
+.unitIn input{padding-right:52px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chips button{background:var(--fill);border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--sub)}
+.chips button:active{color:var(--fg)}
+.result{text-align:center;padding:10px 0 4px}
+.result .big{font-size:40px}
+.base{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:16px;padding:6px}
+.base input{background:var(--card);text-align:right;padding:11px 12px;border-radius:11px}
+.base .w{flex:1;display:flex;align-items:center;gap:6px;min-width:0}
+.base .u{color:var(--sub);font-size:14px;white-space:nowrap;padding-right:6px}
+.base .ub{font-size:14px;font-weight:600;background:var(--card);border-radius:10px;padding:10px 10px;white-space:nowrap}
+.hint{font-size:13px;color:var(--sub);margin:8px 4px 0}
+.search{position:relative;flex:none}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--sub)}
+.search input{padding-left:44px}
+.sec{font-size:13px;color:var(--sub);font-weight:600;margin:16px 4px 4px}
+.res .row{padding:12px 4px;margin:0;border-radius:12px}
+.res .row:active{background:var(--fill)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--fill);color:var(--sub);margin-right:4px;vertical-align:1px}
+.check{display:flex;align-items:center;gap:10px;margin:14px 4px 0;font-size:15px;color:var(--sub);cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--fg);padding:0}
+.danger{color:var(--sub);text-decoration:underline;text-underline-offset:3px}
+.spark{width:100%;height:80px;display:block;margin:6px 0 4px}
+
+/* onboarding */
+.onb{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;overflow:auto}
+.onb.on{display:block}
+.onb .in{max-width:480px;margin:0 auto;padding:56px 20px 30px;min-height:100%;display:flex;flex-direction:column}
+.onb h1{font-size:26px;font-weight:700;letter-spacing:-.7px;line-height:1.35;margin-bottom:8px}
+.onb p{color:var(--sub);margin-bottom:32px}
+.onb .cta{margin-top:auto}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="date"><button id="prev" aria-label="이전 날">‹</button><span id="day"></span><button id="next" aria-label="다음 날">›</button></div>
+  <div class="icons">
+    <button class="icon" id="openSet" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</header>
+
+<div class="view on" id="vToday">
+<section class="card">
+  <div class="label">먹은 칼로리</div>
+  <div class="big num"><span id="eaten">0</span><small>/ <span id="goal">0</span> kcal</small></div>
+  <div class="bar" id="bar"><i id="fill"></i></div>
+  <div class="msg" id="msg"></div>
+  <div class="meta" id="meta"></div>
+</section>
+
+<button class="card wcard press" id="openW">
+  <div class="t" style="flex:1"><div class="label">체중</div><div style="font-size:20px;font-weight:700;margin-top:2px" class="num" id="wNow"></div></div>
+  <span class="label" id="wHint"></span><span class="chev" style="color:var(--sub)">›</span>
+</button>
+
+<section class="card">
+  <div class="label">먹은 음식</div>
+  <div class="list" id="list"></div>
+</section>
+</div>
+
+<div class="view" id="vPlan">
+<section class="card">
+  <div class="label">먹을 계획</div>
+  <div class="big num"><span id="pDone">0</span><small>/ <span id="pAll">0</span> kcal</small></div>
+  <div class="meta" id="pMeta"></div>
+</section>
+<section class="card plan" style="padding-top:10px;padding-bottom:10px">
+  <div id="pList"></div>
+  <button class="quick" id="pQuick"><span class="cb"></span>먹을 음식 추가…</button>
+</section>
+</div>
+
+<button class="fab" id="addBtn">음식 추가</button>
+
+<nav class="tabs"><div class="in">
+  <button data-tab="vToday" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>오늘</button>
+  <button data-tab="vPlan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>계획</button>
+</div></nav>
+
+<div class="ov" id="ov"></div>
+
+<!-- 검색 -->
+<div class="sheet tall" id="sSearch">
+  <div class="grab"></div>
+  <div class="sh"><h2>뭐 먹었어요?</h2><button data-close>닫기</button></div>
+  <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="김치찌개, 삼각김밥, 브랜드 이름…" autocomplete="off" enterkeyhint="search"></div>
+  <div class="body res" id="res"></div>
+  <button class="ghost" id="customBtn">찾는 게 없어요 · 직접 입력</button>
+</div>
+
+<!-- 음식 추가/수정 -->
+<div class="sheet" id="sFood">
+  <div class="grab"></div>
+  <div class="sh"><h2 id="fTitle">음식 추가</h2><button data-close>닫기</button></div>
+  <div class="body">
+    <div class="f" id="fNameWrap"><label>이름</label><input id="fName" autocomplete="off" placeholder="예: 엄마표 김밥"></div>
+    <div id="fNameShow" style="margin:-4px 4px 16px"><div style="font-size:18px;font-weight:700" id="fN"></div><div class="label" id="fB"></div></div>
+    <div class="f">
+      <label>칼로리 기준</label>
+      <div class="base">
+        <div class="w"><input id="fPer" type="number" inputmode="decimal" class="num"><button class="ub" id="fUnit">g</button></div>
+        <span class="u">당</span>
+        <div class="w"><input id="fPk" type="number" inputmode="decimal" class="num" placeholder="0"><span class="u">kcal</span></div>
+      </div>
+      <div class="hint" id="fBaseHint">포장지에 적힌 값이 다르면 고쳐도 돼요.</div>
+    </div>
+    <div class="f">
+      <label>먹은 양</label>
+      <div class="unitIn"><input id="fQty" type="number" inputmode="decimal" class="num"><span id="fQU">g</span></div>
+      <div class="chips" id="fChips"></div>
+    </div>
+    <div class="result"><div class="label">총 칼로리</div><div class="big num"><span id="fKcal">0</span><small>kcal</small></div></div>
+    <label class="check"><input type="checkbox" id="fSave"> 내 음식에 저장해서 다음에 바로 찾기</label>
+  </div>
+  <button class="cta" id="fOk">추가하기</button>
+  <button class="ghost" id="fDel" style="display:none">이 기록 삭제</button>
+</div>
+
+<!-- 체중 -->
+<div class="sheet" id="sW">
+  <div class="grab"></div>
+  <div class="sh"><h2>체중 기록</h2><button data-close>닫기</button></div>
+  <div class="body">
+    <div class="f"><label id="wLbl">오늘 체중</label><div class="unitIn"><input id="wIn" type="number" inputmode="decimal" step="0.1" class="num" placeholder="0.0"><span>kg</span></div>
+      <div class="hint">기록한 체중으로 그날 기초대사량을 다시 계산해요.</div></div>
+    <svg class="spark" id="spark" preserveAspectRatio="none"></svg>
+    <div id="wList"></div>
+  </div>
+  <button class="cta" id="wOk">저장</button>
+</div>
+
+<!-- 설정 -->
+<div class="sheet" id="sSet">
+  <div class="grab"></div>
+  <div class="sh"><h2>설정</h2><button data-close>닫기</button></div>
+  <div class="body">
+    <div class="f"><label>성별</label><div class="seg" id="setSex"><button data-v="male">남성</button><button data-v="female">여성</button></div></div>
+    <div class="cols">
+      <div class="f"><label>나이</label><div class="unitIn"><input id="setAge" type="number" inputmode="numeric" class="num"><span>세</span></div></div>
+      <div class="f"><label>키</label><div class="unitIn"><input id="setH" type="number" inputmode="decimal" class="num"><span>cm</span></div></div>
+    </div>
+    <div class="hint" style="margin-top:-6px;margin-bottom:18px">체중은 메인 화면의 체중 기록에서 바꿔요.</div>
+    <div class="f"><label>화면</label><div class="seg" id="setTheme"><button data-v="dark">다크</button><button data-v="light">라이트</button></div></div>
+    <div class="f" id="myWrap"><label>내 음식</label><div id="myList"></div></div>
+  </div>
+  <button class="cta" id="setOk">저장</button>
+</div>
+
+<!-- 처음 설정 -->
+<div class="onb" id="onb"><div class="in">
+  <h1>반가워요!<br>기초대사량부터 계산할게요</h1>
+  <p>처음 한 번만 입력하면 돼요.</p>
+  <div class="f"><label>성별</label><div class="seg" id="oSex"><button data-v="male">남성</button><button data-v="female">여성</button></div></div>
+  <div class="f"><label>나이</label><div class="unitIn"><input id="oAge" type="number" inputmode="numeric" class="num" placeholder="25"><span>세</span></div></div>
+  <div class="f"><label>키</label><div class="unitIn"><input id="oH" type="number" inputmode="decimal" class="num" placeholder="170"><span>cm</span></div></div>
+  <div class="f"><label>몸무게</label><div class="unitIn"><input id="oW" type="number" inputmode="decimal" class="num" placeholder="65"><span>kg</span></div></div>
+  <div class="result" style="padding:16px 0"><div class="label">기초대사량</div><div class="big num"><span id="oOut">—</span><small>kcal</small></div></div>
+  <button class="cta" id="oOk" disabled>시작하기</button>
+</div></div>
+
+<script src="foods.js"></script>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const KEY='simple-diet-v2';
+let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch{}
+S=Object.assign({profile:null,weights:{},log:{},plan:{},my:[],theme:'dark'},S||{});
+let tab='vToday';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch{}};
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const f1=n=>(Math.round(n*10)/10).toString();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const md=k=>{const[,m,d]=k.split('-');return `${+m}/${+d}`};
+let cur=new Date();
+
+/* ---------- 체중 · 기초대사량 ---------- */
+function weightFor(k){
+  const ks=Object.keys(S.weights).sort();if(!ks.length)return null;
+  let hit=null;for(const x of ks){if(x<=k)hit=x;else break;}
+  hit=hit||ks[0];return{kg:S.weights[hit],date:hit};
+}
+function bmr(p,kg){return p&&kg?Math.round(10*kg+6.25*p.h-5*p.age+(p.sex==='male'?5:-161)):0;}
+
+/* ---------- 메인 ---------- */
+function render(){
+  document.documentElement.classList.toggle('light',S.theme==='light');
+  $('meta[name=theme-color]').content=S.theme==='light'?'#f2f3f5':'#0b0b0c';
+  const k=ymd(cur),today=ymd(new Date()),wd='일월화수목금토'[cur.getDay()];
+  $('#day').textContent=k===today?'오늘':`${cur.getMonth()+1}월 ${cur.getDate()}일 (${wd})`;
+  $('#next').style.visibility=k>=today?'hidden':'visible';
+  const items=S.log[k]||[],total=items.reduce((a,b)=>a+b.kcal,0);
+  const w=weightFor(k),goal=bmr(S.profile,w&&w.kg);
+  $('#eaten').textContent=fmt(total);$('#goal').textContent=fmt(goal);
+  const pct=goal?total/goal*100:0;
+  $('#fill').style.width=Math.min(100,pct)+'%';$('#bar').classList.toggle('over',pct>100);
+  $('#msg').textContent=!goal?'':total===0?'아직 먹은 게 없어요':total<=goal?`${fmt(goal-total)} kcal 더 먹을 수 있어요`:`기초대사량보다 ${fmt(total-goal)} kcal 더 먹었어요`;
+  $('#meta').textContent=goal?`기초대사량 ${fmt(goal)} kcal · ${Math.round(pct)}%`:'';
+  $('#wNow').textContent=w?`${f1(w.kg)} kg`:'—';
+  $('#wHint').textContent=S.weights[k]!=null?'':(k===today?'오늘 기록하기':'기록하기')+(w?` · ${md(w.date)} 기준`:'');
+  const box=$('#list');
+  box.innerHTML=items.length?'':'<div class="empty">아래 버튼으로 먹은 음식을 추가해요</div>';
+  items.forEach((it,i)=>{
+    const b=document.createElement('button');b.className='row';
+    b.innerHTML=`<div class="t"><div class="n">${esc(it.name)}</div><div class="s">${esc([it.brand,`${f1(it.qty)}${it.unit}`].filter(Boolean).join(' · '))}</div></div><div class="k num">${fmt(it.kcal)} kcal</div>`;
+    b.onclick=()=>openFood(it,{edit:i});box.appendChild(b);
+  });
+  renderPlan(k,goal);
+}
+
+/* ---------- 계획 체크리스트 ---------- */
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function renderPlan(k,goal){
+  const P=S.plan[k]||[],all=P.reduce((a,b)=>a+b.kcal,0),done=P.filter(p=>p.done).reduce((a,b)=>a+b.kcal,0);
+  $('#pDone').textContent=fmt(done);$('#pAll').textContent=fmt(all);
+  $('#pMeta').textContent=!P.length?'먹을 음식을 미리 적어두고, 먹으면 체크하세요':
+    `${P.filter(p=>p.done).length}/${P.length}개 먹음`+(goal?` · 계획 전부 먹으면 기초대사량의 ${Math.round(all/goal*100)}%`:'');
+  const box=$('#pList');box.innerHTML='';
+  P.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='item'+(p.done?' done':'');
+    d.innerHTML=`<button class="cb" aria-label="먹음 체크">${CHECK}</button><button class="txt"><span class="n">${esc(p.name)}</span><span class="g num">${f1(p.qty)}${p.unit}</span></button><span class="kc num">${fmt(p.kcal)} kcal</span>`;
+    d.querySelector('.cb').onclick=()=>togglePlan(k,i);
+    d.querySelector('.txt').onclick=()=>openFood(p,{editPlan:i});
+    box.appendChild(d);
+  });
+}
+const logItem=p=>({name:p.name,brand:p.brand||'',unit:p.unit,per:p.per,pk:p.pk,qty:p.qty,kcal:p.kcal,pid:p.id});
+function togglePlan(k,i){
+  const p=S.plan[k][i];p.done=!p.done;
+  if(p.done)(S.log[k]??=[]).push(logItem(p));
+  else{S.log[k]=(S.log[k]||[]).filter(x=>x.pid!==p.id);if(!S.log[k].length)delete S.log[k];}
+  save();render();
+}
+function setTab(t){
+  tab=t;$$('.view').forEach(v=>v.classList.toggle('on',v.id===t));
+  $$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('#addBtn').textContent=t==='vPlan'?'먹을 음식 추가':'음식 추가';window.scrollTo(0,0);
+}
+$$('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('#prev').onclick=()=>{cur.setDate(cur.getDate()-1);render();};
+$('#next').onclick=()=>{cur.setDate(cur.getDate()+1);render();};
+
+/* ---------- 시트 ---------- */
+let stack=null;
+function open(id){$$('.sheet').forEach(s=>s.classList.toggle('on','#'+s.id===id));$('#ov').classList.toggle('on',!!id);stack=id;}
+$('#ov').onclick=()=>open(null);
+$$('[data-close]').forEach(b=>b.onclick=()=>open(null));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#onb').classList.contains('on'))open(null);});
+function seg(sel,val,cb){$$(sel+' button').forEach(b=>{b.classList.toggle('on',b.dataset.v===val);b.onclick=()=>{seg(sel,b.dataset.v,cb);cb&&cb(b.dataset.v);};});}
+
+/* ---------- 검색 ---------- */
+const norm=s=>String(s).normalize('NFKC').toLowerCase().replace(/[\s,()·\[\]_\-]/g,'');
+const GEN=(window.FOODS||[]).map(f=>({n:f[0],b:'',u:f[2],per:100,pk:f[1],s:f[3],key:norm(f[0])}));
+let PK=null,pkLoading=false;
+function loadPack(){
+  if(PK||pkLoading)return;pkLoading=true;
+  const s=document.createElement('script');s.src='packaged.js';s.async=true;
+  s.onload=()=>{const P=window.PACK,lines=P.d.split('\n'),n=[],b=[],k=[],key=[];
+    for(const l of lines){const c=l.split('\t');n.push(c[0]);b.push(+c[1]);k.push(l);key.push(norm(c[0]+P.b[+c[1]]));}
+    PK={brands:P.b,n,b,raw:k,key};window.PACK=null;pkLoading=false;if(stack==='#sSearch')showResults();};
+  s.onerror=()=>{pkLoading=false;};
+  document.body.appendChild(s);
+}
+function pkFood(i){const c=PK.raw[i].split('\t');return{n:c[0],b:PK.brands[+c[1]],u:c[3]==='m'?'ml':'g',per:100,pk:+c[2],s:+c[4]};}
+function scan(keys,toks,limit){
+  const a=[],b=[];
+  for(let i=0;i<keys.length&&a.length<limit;i++){
+    const k=keys[i];let ok=true;for(const t of toks)if(!k.includes(t)){ok=false;break;}
+    if(!ok)continue;(k.startsWith(toks[0])?a:b).push(i);
+    if(b.length>limit*4&&a.length>=limit/2)break;
+  }
+  return a.concat(b).slice(0,limit);
+}
+function showResults(){
+  const q=$('#q').value.trim(),box=$('#res');
+  const toks=q.split(/\s+/).map(norm).filter(Boolean);
+  let html='';const items=[];
+  const sec=(title,list)=>{if(!list.length)return;html+=`<div class="sec">${title}</div>`;for(const f of list){items.push(f);html+=`<button class="row" data-i="${items.length-1}"><div class="t"><div class="n">${esc(f.n)}</div><div class="s">${f.b?esc(f.b)+' · ':''}${f1(f.per)}${f.u}당 ${fmt(f.pk)}kcal</div></div><div class="k num">${fmt(f.pk*f.s/f.per)}<span class="label"> kcal</span></div></button>`;}};
+  const my=S.my.map(f=>({...f,key:norm(f.n+(f.b||''))}));
+  if(!toks.length){
+    sec('내 음식',my.slice(-30).reverse());
+    if(!my.length)html='<div class="hint" style="padding:20px 4px">음식 이름이나 편의점 상품, 브랜드 이름으로 찾아보세요.</div>';
+  }else{
+    html+='<div id="dsSec"></div>';
+    sec('내 음식',my.filter(f=>toks.every(t=>f.key.includes(t))));
+    sec('음식',scan(GEN.map(f=>f.key),toks,30).map(i=>GEN[i]));
+    if(PK)sec('편의점 · 가공식품',scan(PK.key,toks,50).map(pkFood));
+    else html+='<div class="hint" style="padding:12px 4px">편의점 · 가공식품 불러오는 중…</div>';
+  }
+  box.innerHTML=html;box.scrollTop=0;
+  box.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openFood(items[+b.dataset.i]));
+  dsSearch(q);
+}
+
+/* ---------- 다이어트신 칼로리 사전 (server.py 경유) ---------- */
+let dsOK=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname),dsSeq=0,dsT;
+function dsRow(f){
+  return `<button class="row" data-ds="${esc(f.idx)}"><div class="t"><div class="n">${esc(f.n)}</div><div class="s">${f.b?esc(f.b)+' · ':''}1회 제공량</div></div><div class="k num">${fmt(f.kcal)}<span class="label"> kcal</span></div></button>`;
+}
+function dsSearch(q,page=1){
+  clearTimeout(dsT);const sec=$('#dsSec');
+  if(!sec||!q||!dsOK)return;
+  const seq=++dsSeq;
+  if(page===1)sec.innerHTML='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전 검색 중…</div>';
+  dsT=setTimeout(async()=>{
+    let data;
+    try{const r=await fetch(`api/ds/search?q=${encodeURIComponent(q)}&page=${page}`);if(!r.ok)throw 0;data=await r.json();}
+    catch{if(seq!==dsSeq)return;sec.innerHTML='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전에 연결하지 못했어요. server.py로 열었는지 확인해 주세요.</div>';return;}
+    if(seq!==dsSeq||!document.body.contains(sec))return;
+    if(page===1)sec.innerHTML='<div class="sec">칼로리 사전</div><div class="dsl"></div>';
+    sec.querySelector('.more')?.remove();
+    const list=sec.querySelector('.dsl');
+    if(page===1&&!data.items.length){list.innerHTML='<div class="hint" style="margin:6px 4px 10px">칼로리 사전에 없어요</div>';return;}
+    for(const f of data.items){
+      list.insertAdjacentHTML('beforeend',dsRow(f));
+      list.lastElementChild.onclick=e=>dsPick(f,e.currentTarget);
+    }
+    if(data.more){
+      sec.insertAdjacentHTML('beforeend','<button class="ghost more" style="margin:2px 0 6px">칼로리 사전 더 보기</button>');
+      sec.querySelector('.more').onclick=e=>{e.currentTarget.textContent='불러오는 중…';dsSearch(q,page+1);};
+    }
+  },page===1?350:0);
+}
+async function dsPick(f,btn){
+  const s=btn.querySelector('.s'),old=s.textContent;s.textContent='불러오는 중…';
+  let d=null;try{const r=await fetch('api/ds/food?idx='+encodeURIComponent(f.idx)+'&name='+encodeURIComponent(f.n));if(r.ok)d=await r.json();}catch{}
+  s.textContent=old;
+  const kcal=d&&d.kcal!=null?d.kcal:f.kcal;
+  if(d&&d.amount)openFood({n:f.n,b:f.b,u:d.unit,per:d.amount,pk:kcal,s:d.amount});
+  else openFood({n:f.n,b:f.b,u:'인분',per:1,pk:kcal,s:1});
+}
+GEN.key=GEN.map(f=>f.key);
+let qT;$('#q').oninput=()=>{clearTimeout(qT);qT=setTimeout(showResults,120);};
+let target='log';
+$('#addBtn').onclick=$('#pQuick').onclick=()=>{target=tab==='vPlan'?'plan':'log';$('#sSearch h2').textContent=target==='plan'?'뭐 먹을 거예요?':'뭐 먹었어요?';loadPack();$('#q').value='';showResults();open('#sSearch');setTimeout(()=>$('#q').focus(),300);};
+
+/* ---------- 음식 추가/수정 ---------- */
+let F=null; // {n,b,u,per,pk,s,custom,edit}
+function openFood(food,opt={}){
+  const custom=!!opt.custom,edit=opt.edit??opt.editPlan,mode=opt.editPlan!=null?'plan':opt.edit!=null?'log':target;
+  F={...food,custom,edit,mode};
+  if(edit!=null){const it=food;F={n:it.name,b:it.brand,u:it.unit,per:it.per,pk:it.pk,s:it.qty,custom:false,edit,mode};}
+  $('#fTitle').textContent=edit!=null?(mode==='plan'?'계획 수정':'기록 수정'):custom?'직접 입력':mode==='plan'?'먹을 음식 추가':'음식 추가';
+  $('#fNameWrap').style.display=custom?'':'none';$('#fNameShow').style.display=custom?'none':'';
+  $('#fName').value=F.n||'';$('#fN').textContent=F.n;$('#fB').textContent=F.b||'';
+  $('#fPer').value=f1(F.per);$('#fPk').value=F.pk!=null&&F.pk!==''?f1(F.pk):'';
+  $('#fQty').value=f1(F.s);
+  $('#fSave').checked=custom;$('#fSave').parentElement.style.display=edit!=null?'none':'';
+  $('#fOk').textContent=edit!=null?'저장하기':mode==='plan'?'계획에 추가하기':'추가하기';
+  $('#fDel').style.display=edit!=null?'':'none';$('#fDel').textContent=mode==='plan'?'이 계획 삭제':'이 기록 삭제';
+  $('#fBaseHint').textContent=custom?'포장지나 메뉴판에 적힌 값을 넣어 주세요. (예: 100g당 250kcal)':'포장지에 적힌 값이 다르면 고쳐도 돼요.';
+  setUnit(F.u);
+  const ch=$('#fChips');ch.innerHTML='';
+  const base=edit!=null?null:F.s;
+  if(base){[[.5,'반 개'],[1,`1인분 ${f1(base)}${F.u}`],[1.5,'1.5인분'],[2,'2인분']].forEach(([m,l])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#fQty').value=f1(base*m);fcalc();};ch.appendChild(b);});}
+  if(F.u==='g'||F.u==='ml')[100,200].forEach(v=>{const b=document.createElement('button');b.textContent=v+F.u;b.onclick=()=>{$('#fQty').value=v;fcalc();};ch.appendChild(b);});
+  fcalc();open('#sFood');
+  setTimeout(()=>(custom?$('#fName'):$('#fQty')).focus(),320);
+}
+function setUnit(u){F.u=u;$('#fUnit').textContent=u;$('#fQU').textContent=u;}
+$('#fUnit').onclick=()=>{setUnit(F.u==='g'?'ml':'g');};
+function fcalc(){
+  const per=parseFloat($('#fPer').value),pk=parseFloat($('#fPk').value),q=parseFloat($('#fQty').value);
+  const ok=per>0&&pk>=0&&q>0&&(!F.custom||$('#fName').value.trim());
+  $('#fKcal').textContent=ok?fmt(pk*q/per):'0';$('#fOk').disabled=!ok;return ok?{per,pk,q,kcal:Math.round(pk*q/per)}:null;
+}
+['#fPer','#fPk','#fQty','#fName'].forEach(s=>$(s).oninput=fcalc);
+$('#fQty').onkeydown=e=>{if(e.key==='Enter')$('#fOk').click();};
+$('#fOk').onclick=()=>{
+  const v=fcalc();if(!v)return;
+  const name=F.custom?$('#fName').value.trim():F.n;
+  const it={name,brand:F.b||'',unit:F.u,per:v.per,pk:v.pk,qty:v.q,kcal:v.kcal};
+  const k=ymd(cur);
+  if(F.mode==='plan'){
+    const P=(S.plan[k]??=[]);
+    if(F.edit!=null){
+      const old=P[F.edit];Object.assign(old,it);
+      if(old.done){const L=S.log[k]||[],j=L.findIndex(x=>x.pid===old.id);if(j>=0)L[j]=logItem(old);}
+    }else P.push({id:uid(),...it,done:false});
+  }else if(F.edit!=null){const pid=S.log[k][F.edit].pid;S.log[k][F.edit]={...it,pid};const p=(S.plan[k]||[]).find(x=>x.id===pid);if(p)Object.assign(p,it);}
+  else(S.log[k]??=[]).push(it);
+  if($('#fSave').checked&&F.edit==null){
+    S.my=S.my.filter(m=>!(m.n===name&&(m.b||'')===(F.b||'')));
+    S.my.push({n:name,b:F.b||'',u:F.u,per:v.per,pk:v.pk,s:v.q});
+  }
+  save();open(null);render();
+};
+$('#fDel').onclick=()=>{
+  const k=ymd(cur);
+  if(F.mode==='plan'){
+    const [p]=S.plan[k].splice(F.edit,1);if(!S.plan[k].length)delete S.plan[k];
+    if(p.done&&S.log[k]){S.log[k]=S.log[k].filter(x=>x.pid!==p.id);if(!S.log[k].length)delete S.log[k];}
+  }else{
+    const [x]=S.log[k].splice(F.edit,1);if(!S.log[k].length)delete S.log[k];
+    const p=x.pid&&(S.plan[k]||[]).find(y=>y.id===x.pid);if(p)p.done=false;
+  }
+  save();open(null);render();
+};
+$('#customBtn').onclick=()=>openFood({n:$('#q').value.trim(),b:'',u:'g',per:100,pk:'',s:100},{custom:true});
+
+/* ---------- 체중 ---------- */
+function renderW(){
+  const ks=Object.keys(S.weights).sort();
+  const sp=$('#spark'),last=ks.slice(-30);
+  if(last.length>1){
+    const vs=last.map(k=>S.weights[k]),mn=Math.min(...vs),mx=Math.max(...vs),r=mx-mn||1,W=300,H=80;
+    const pts=vs.map((v,i)=>`${(i/(vs.length-1)*W).toFixed(1)},${(H-8-(v-mn)/r*(H-16)).toFixed(1)}`);
+    sp.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    sp.innerHTML=`<polyline points="${pts.join(' ')}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+    sp.style.display='';
+  }else sp.style.display='none';
+  const box=$('#wList');box.innerHTML='';
+  ks.slice(-14).reverse().forEach((k,i,arr)=>{
+    const prev=S.weights[ks[ks.indexOf(k)-1]];const d=prev!=null?S.weights[k]-prev:null;
+    const r=document.createElement('div');r.className='row';r.style.padding='12px 4px';
+    r.innerHTML=`<div class="t"><div class="n num">${f1(S.weights[k])} kg</div><div class="s">${md(k)}${d!=null&&Math.abs(d)>=.05?` · ${d>0?'+':''}${f1(d)}kg`:''}</div></div><button class="danger" style="font-size:13px">삭제</button>`;
+    r.querySelector('button').onclick=()=>{if(Object.keys(S.weights).length<=1)return alert('체중 기록이 하나는 있어야 기초대사량을 계산할 수 있어요.');delete S.weights[k];save();renderW();render();};
+    box.appendChild(r);
+  });
+}
+$('#openW').onclick=()=>{
+  const k=ymd(cur),w=weightFor(k);
+  $('#wLbl').textContent=k===ymd(new Date())?'오늘 체중':`${cur.getMonth()+1}월 ${cur.getDate()}일 체중`;
+  $('#wIn').value=S.weights[k]!=null?f1(S.weights[k]):'';$('#wIn').placeholder=w?f1(w.kg):'0.0';
+  renderW();open('#sW');setTimeout(()=>$('#wIn').focus(),320);
+};
+$('#wOk').onclick=()=>{const v=parseFloat($('#wIn').value);if(!(v>20&&v<400))return $('#wIn').focus();S.weights[ymd(cur)]=Math.round(v*10)/10;save();open(null);render();};
+$('#wIn').onkeydown=e=>{if(e.key==='Enter')$('#wOk').click();};
+
+/* ---------- 설정 ---------- */
+let setSex,setTheme;
+function renderMy(){
+  const box=$('#myList');box.innerHTML='';$('#myWrap').style.display=S.my.length?'':'none';
+  S.my.forEach((m,i)=>{const r=document.createElement('div');r.className='row';r.style.padding='10px 4px';
+    r.innerHTML=`<div class="t"><div class="n">${esc(m.n)}</div><div class="s">${f1(m.per)}${m.u}당 ${fmt(m.pk)}kcal</div></div><button class="danger" style="font-size:13px">삭제</button>`;
+    r.querySelector('button').onclick=()=>{S.my.splice(i,1);save();renderMy();};box.appendChild(r);});
+}
+$('#openSet').onclick=()=>{
+  const p=S.profile;setSex=p.sex;setTheme=S.theme;
+  seg('#setSex',setSex,v=>setSex=v);seg('#setTheme',setTheme,v=>{setTheme=v;S.theme=v;render();});
+  $('#setAge').value=p.age;$('#setH').value=p.h;renderMy();open('#sSet');
+};
+$('#setOk').onclick=()=>{const age=+$('#setAge').value,h=+$('#setH').value;if(!(age>0&&h>0))return;
+  S.profile={sex:setSex,age,h};S.theme=setTheme;save();open(null);render();};
+
+/* ---------- 처음 설정 ---------- */
+let oSex='male';
+function ocalc(){const p={sex:oSex,age:+$('#oAge').value,h:+$('#oH').value},w=+$('#oW').value,ok=p.age>0&&p.h>0&&w>20;
+  $('#oOut').textContent=ok?fmt(bmr(p,w)):'—';$('#oOk').disabled=!ok;return ok?{p,w}:null;}
+seg('#oSex',oSex,v=>{oSex=v;ocalc();});
+['#oAge','#oH','#oW'].forEach(s=>$(s).oninput=ocalc);
+$('#oOk').onclick=()=>{const v=ocalc();if(!v)return;S.profile=v.p;S.weights[ymd(new Date())]=Math.round(v.w*10)/10;save();$('#onb').classList.remove('on');render();};
+
+render();
+if(!S.profile)$('#onb').classList.add('on');
+setTimeout(loadPack,600);
+</script>
+</body>
+</html>
