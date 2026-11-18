@@ -299,9 +299,11 @@ function bmr(p,kg){return p&&kg?Math.round(10*kg+6.25*p.h-5*p.age+(p.sex==='male
 function render(){
   document.documentElement.classList.toggle('light',S.theme==='light');
   $('meta[name=theme-color]').content=S.theme==='light'?'#f2f3f5':'#0b0b0c';
-  const k=ymd(cur),today=ymd(new Date()),wd='일월화수목금토'[cur.getDay()];
-  $('#day').textContent=k===today?'오늘':`${cur.getMonth()+1}월 ${cur.getDate()}일 (${wd})`;
-  $('#next').style.visibility=k>=today?'hidden':'visible';
+  const k=ymd(cur),now=new Date(),today=ymd(now),wd='일월화수목금토'[cur.getDay()];
+  const off=d=>{const x=new Date(now);x.setDate(x.getDate()+d);return ymd(x);};
+  $('#day').textContent=k===today?'오늘':k===off(1)?'내일':k===off(-1)?'어제':`${cur.getMonth()+1}월 ${cur.getDate()}일 (${wd})`;
+  // 계획 탭은 앞으로 14일까지 미리 짤 수 있고, 오늘 탭은 오늘까지만
+  $('#next').style.visibility=k>=(tab==='vPlan'?off(14):today)?'hidden':'visible';
   const items=S.log[k]||[],total=items.reduce((a,b)=>a+b.kcal,0);
   const w=weightFor(k),goal=bmr(S.profile,w&&w.kg);
   $('#eaten').textContent=fmt(total);$('#goal').textContent=fmt(goal);
@@ -348,6 +350,8 @@ function setTab(t){
   tab=t;$$('.view').forEach(v=>v.classList.toggle('on',v.id===t));
   $$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('#addBtn').textContent=t==='vPlan'?'먹을 음식 추가':'음식 추가';window.scrollTo(0,0);
+  if(t==='vToday'&&ymd(cur)>ymd(new Date()))cur=new Date(); // 미래 날짜는 계획 탭에서만
+  render();
 }
 $$('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('#prev').onclick=()=>{cur.setDate(cur.getDate()-1);render();};
@@ -406,19 +410,28 @@ function showResults(){
 }
 
 /* ---------- 다이어트신 칼로리 사전 (server.py 경유) ---------- */
-let dsOK=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname),dsSeq=0,dsT;
+// localhost로 열면 같은 서버, GitHub Pages로 열면 이 컴퓨터에서 켜둔 server.py(5178)로 물어봄
+const dsLocal=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const DS=dsLocal?'api/ds/':'http://localhost:5178/api/ds/';
+let dsPing=null,dsSeq=0,dsT;
+function dsCheck(){ // 검색 창 열 때마다 서버가 켜져 있는지 확인
+  dsPing=fetch(DS+'ping',{signal:AbortSignal.timeout(1500)}).then(r=>r.ok).catch(()=>false);
+}
+const DS_OFF='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전 검색은 컴퓨터에서 <b>start.bat</b>을 켜둬야 돼요. 켜고 다시 검색해 보세요.</div>';
 function dsRow(f){
   return `<button class="row" data-ds="${esc(f.idx)}"><div class="t"><div class="n">${esc(f.n)}</div><div class="s">${f.b?esc(f.b)+' · ':''}1회 제공량</div></div><div class="k num">${fmt(f.kcal)}<span class="label"> kcal</span></div></button>`;
 }
 function dsSearch(q,page=1){
   clearTimeout(dsT);const sec=$('#dsSec');
-  if(!sec||!q||!dsOK)return;
+  if(!sec||!q)return;
   const seq=++dsSeq;
   if(page===1)sec.innerHTML='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전 검색 중…</div>';
   dsT=setTimeout(async()=>{
+    if(!dsPing)dsCheck();
+    if(!await dsPing){if(seq===dsSeq&&page===1)sec.innerHTML=DS_OFF;return;}
     let data;
-    try{const r=await fetch(`api/ds/search?q=${encodeURIComponent(q)}&page=${page}`);if(!r.ok)throw 0;data=await r.json();}
-    catch{if(seq!==dsSeq)return;sec.innerHTML='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전에 연결하지 못했어요. server.py로 열었는지 확인해 주세요.</div>';return;}
+    try{const r=await fetch(`${DS}search?q=${encodeURIComponent(q)}&page=${page}`);data=await r.json();if(!r.ok)throw data;}
+    catch(e){if(seq!==dsSeq)return;sec.innerHTML=e&&e.error?'<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전이 잠깐 응답하지 않아요. 조금 뒤에 다시 검색해 보세요.</div>':DS_OFF;dsPing=null;return;}
     if(seq!==dsSeq||!document.body.contains(sec))return;
     if(page===1)sec.innerHTML='<div class="sec">칼로리 사전</div><div class="dsl"></div>';
     sec.querySelector('.more')?.remove();
@@ -436,7 +449,7 @@ function dsSearch(q,page=1){
 }
 async function dsPick(f,btn){
   const s=btn.querySelector('.s'),old=s.textContent;s.textContent='불러오는 중…';
-  let d=null;try{const r=await fetch('api/ds/food?idx='+encodeURIComponent(f.idx)+'&name='+encodeURIComponent(f.n));if(r.ok)d=await r.json();}catch{}
+  let d=null;try{const r=await fetch(DS+'food?idx='+encodeURIComponent(f.idx)+'&name='+encodeURIComponent(f.n));if(r.ok)d=await r.json();}catch{}
   s.textContent=old;
   const kcal=d&&d.kcal!=null?d.kcal:f.kcal;
   if(d&&d.amount)openFood({n:f.n,b:f.b,u:d.unit,per:d.amount,pk:kcal,s:d.amount});
@@ -445,7 +458,7 @@ async function dsPick(f,btn){
 GEN.key=GEN.map(f=>f.key);
 let qT;$('#q').oninput=()=>{clearTimeout(qT);qT=setTimeout(showResults,120);};
 let target='log';
-$('#addBtn').onclick=$('#pQuick').onclick=()=>{target=tab==='vPlan'?'plan':'log';$('#sSearch h2').textContent=target==='plan'?'뭐 먹을 거예요?':'뭐 먹었어요?';loadPack();$('#q').value='';showResults();open('#sSearch');setTimeout(()=>$('#q').focus(),300);};
+$('#addBtn').onclick=$('#pQuick').onclick=()=>{target=tab==='vPlan'?'plan':'log';$('#sSearch h2').textContent=target==='plan'?'뭐 먹을 거예요?':'뭐 먹었어요?';loadPack();dsCheck();$('#q').value='';showResults();open('#sSearch');setTimeout(()=>$('#q').focus(),300);};
 
 /* ---------- 음식 추가/수정 ---------- */
 let F=null; // {n,b,u,per,pk,s,custom,edit}

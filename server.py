@@ -70,14 +70,33 @@ def food(idx, name=''):
     return {'label': m.group(1) if m else '1인분', 'amount': None, 'unit': None, 'kcal': float(m.group(2).replace(',', '')) if m else None}
 
 
+ALLOW = ('https://charaing.github.io',)  # GitHub Pages 버전에서도 이 서버로 검색할 수 있게
+
+
 class H(SimpleHTTPRequestHandler):
+    def cors(self):
+        o = self.headers.get('Origin', '')
+        if o in ALLOW:
+            self.send_header('Access-Control-Allow-Origin', o)
+            self.send_header('Access-Control-Allow-Private-Network', 'true')
+            self.send_header('Vary', 'Origin')
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.cors()
+        self.send_header('Access-Control-Allow-Methods', 'GET')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         if not u.path.startswith('/api/ds/'):
             return super().do_GET()
         p = urllib.parse.parse_qs(u.query)
         try:
-            if u.path == '/api/ds/search':
+            if u.path == '/api/ds/ping':
+                data = {'ok': True}
+            elif u.path == '/api/ds/search':
                 q = (p.get('q') or [''])[0].strip()[:40]
                 page = max(1, min(50, int((p.get('page') or ['1'])[0])))
                 data = search(q, page) if q else {'items': [], 'more': False}
@@ -89,6 +108,7 @@ class H(SimpleHTTPRequestHandler):
         except Exception as e:
             body, code = json.dumps({'error': str(e)}).encode(), 502
         self.send_response(code)
+        self.cors()
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
