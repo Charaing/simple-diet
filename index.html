@@ -78,6 +78,8 @@ body{padding-bottom:180px}
 .plan .item.done .n,.plan .item.done .g,.plan .item.done .kc{color:var(--sub);text-decoration:line-through;text-decoration-thickness:1.5px}
 .quick{display:flex;align-items:center;gap:14px;padding:13px 0;width:100%;color:var(--sub);font-size:17px;text-align:left}
 .quick .cb{border-style:dashed}
+.plan .mh{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 4px}
+.plan .mh b{font-size:15px;font-weight:700}
 .fab{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);width:calc(100% - 32px);max-width:448px;height:58px;border-radius:18px;background:var(--fg);color:var(--bg);font-size:17px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .fab:active{transform:translateX(-50%) scale(.98)}
 
@@ -182,10 +184,7 @@ input,select,textarea{font-size:max(16px,1em)}
   <div class="big num"><span id="pDone">0</span><small>/ <span id="pAll">0</span> kcal</small></div>
   <div class="meta" id="pMeta"></div>
 </section>
-<section class="card plan" style="padding-top:10px;padding-bottom:10px">
-  <div id="pList"></div>
-  <button class="quick" id="pQuick"><span class="cb"></span>먹을 음식 추가…</button>
-</section>
+<div id="pMeals"></div>
 </div>
 
 <button class="fab" id="addBtn">음식 추가</button>
@@ -211,6 +210,7 @@ input,select,textarea{font-size:max(16px,1em)}
   <div class="grab"></div>
   <div class="sh"><h2 id="fTitle">음식 추가</h2><button data-close>닫기</button></div>
   <div class="body">
+    <div class="f" id="fMealWrap"><label>언제</label><div class="seg" id="fMeal"><button data-v="아침">아침</button><button data-v="점심">점심</button><button data-v="저녁">저녁</button></div></div>
     <div class="f" id="fNameWrap"><label>이름</label><input id="fName" autocomplete="off" placeholder="예: 엄마표 김밥"></div>
     <div id="fNameShow" style="margin:-4px 4px 16px"><div style="font-size:18px;font-weight:700" id="fN"></div><div class="label" id="fB"></div></div>
     <div class="f">
@@ -338,20 +338,32 @@ function render(){
 }
 
 /* ---------- 계획 체크리스트 ---------- */
+const MEALS=['아침','점심','저녁'];
+const mealNow=()=>{const h=new Date().getHours();return h<11?'아침':h<16?'점심':'저녁';};
 const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 function renderPlan(k,goal){
   const P=S.plan[k]||[],all=P.reduce((a,b)=>a+b.kcal,0),done=P.filter(p=>p.done).reduce((a,b)=>a+b.kcal,0);
   $('#pDone').textContent=fmt(done);$('#pAll').textContent=fmt(all);
   $('#pMeta').textContent=!P.length?'먹을 음식을 미리 적어두고, 먹으면 체크하세요':
     `${P.filter(p=>p.done).length}/${P.length}개 먹음`+(goal?` · 계획 전부 먹으면 기초대사량의 ${Math.round(all/goal*100)}%`:'');
-  const box=$('#pList');box.innerHTML='';
-  P.forEach((p,i)=>{
-    const d=document.createElement('div');d.className='item'+(p.done?' done':'');
-    d.innerHTML=`<button class="cb" aria-label="먹음 체크">${CHECK}</button><button class="txt"><span class="n">${esc(p.name)}</span><span class="g num">${f1(p.qty)}${p.unit}</span></button><span class="kc num">${fmt(p.kcal)} kcal</span>`;
-    d.querySelector('.cb').onclick=()=>togglePlan(k,i);
-    d.querySelector('.txt').onclick=()=>openFood(p,{editPlan:i});
-    box.appendChild(d);
-  });
+  const box=$('#pMeals');box.innerHTML='';
+  const groups=MEALS.map(m=>[m,[]]);const etc=[];
+  P.forEach((p,i)=>{const g=groups.find(([m])=>m===p.meal);(g?g[1]:etc).push([p,i]);});
+  if(etc.length)groups.push(['기타',etc]);
+  for(const [m,list] of groups){
+    const sec=document.createElement('section');sec.className='card plan';sec.style.cssText='padding-top:14px;padding-bottom:6px';
+    const kc=list.reduce((a,[p])=>a+p.kcal,0);
+    sec.innerHTML=`<div class="mh"><b>${m}</b><span class="label num">${list.length?fmt(kc)+' kcal':''}</span></div>`;
+    for(const [p,i] of list){
+      const d=document.createElement('div');d.className='item'+(p.done?' done':'');
+      d.innerHTML=`<button class="cb" aria-label="먹음 체크">${CHECK}</button><button class="txt"><span class="n">${esc(p.name)}</span><span class="g num">${f1(p.qty)}${p.unit}</span></button><span class="kc num">${fmt(p.kcal)} kcal</span>`;
+      d.querySelector('.cb').onclick=()=>togglePlan(k,i);
+      d.querySelector('.txt').onclick=()=>openFood(p,{editPlan:i});
+      sec.appendChild(d);
+    }
+    if(m!=='기타'){const q=document.createElement('button');q.className='quick';q.innerHTML=`<span class="cb"></span>${m} 추가…`;q.onclick=()=>openSearch(m);sec.appendChild(q);}
+    box.appendChild(sec);
+  }
 }
 const logItem=p=>({name:p.name,brand:p.brand||'',unit:p.unit,per:p.per,pk:p.pk,qty:p.qty,kcal:p.kcal,pid:p.id});
 function togglePlan(k,i){
@@ -473,7 +485,9 @@ async function dsPick(f,btn){
 GEN.key=GEN.map(f=>f.key);
 let qT;$('#q').oninput=()=>{clearTimeout(qT);qT=setTimeout(showResults,120);};
 let target='log';
-$('#addBtn').onclick=$('#pQuick').onclick=()=>{target=tab==='vPlan'?'plan':'log';$('#sSearch h2').textContent=target==='plan'?'뭐 먹을 거예요?':'뭐 먹었어요?';loadPack();dsCheck();$('#q').value='';showResults();open('#sSearch');setTimeout(()=>$('#q').focus(),300);};
+let planMeal='아침';
+function openSearch(meal){target=tab==='vPlan'?'plan':'log';planMeal=meal||mealNow();$('#sSearch h2').textContent=target==='plan'?`${planMeal}에 뭐 먹을 거예요?`:'뭐 먹었어요?';loadPack();dsCheck();$('#q').value='';showResults();open('#sSearch');setTimeout(()=>$('#q').focus(),300);}
+$('#addBtn').onclick=()=>openSearch();
 
 /* ---------- 음식 추가/수정 ---------- */
 let F=null; // {n,b,u,per,pk,s,custom,edit}
@@ -481,6 +495,8 @@ function openFood(food,opt={}){
   const custom=!!opt.custom,edit=opt.edit??opt.editPlan,mode=opt.editPlan!=null?'plan':opt.edit!=null?'log':target;
   F={...food,custom,edit,mode};
   if(edit!=null){const it=food;F={n:it.name,b:it.brand,u:it.unit,per:it.per,pk:it.pk,s:it.qty,custom:false,edit,mode};}
+  F.meal=mode==='plan'?(edit!=null?food.meal:planMeal)||planMeal:null;
+  $('#fMealWrap').style.display=mode==='plan'?'':'none';if(mode==='plan')seg('#fMeal',F.meal,v=>F.meal=v);
   $('#fTitle').textContent=edit!=null?(mode==='plan'?'계획 수정':'기록 수정'):custom?'직접 입력':mode==='plan'?'먹을 음식 추가':'음식 추가';
   $('#fNameWrap').style.display=custom?'':'none';$('#fNameShow').style.display=custom?'none':'';
   $('#fName').value=F.n||'';$('#fN').textContent=F.n;$('#fB').textContent=F.b||'';
@@ -519,9 +535,9 @@ $('#fOk').onclick=()=>{
   if(F.mode==='plan'){
     const P=(S.plan[k]??=[]);
     if(F.edit!=null){
-      const old=P[F.edit];Object.assign(old,it);
+      const old=P[F.edit];Object.assign(old,it,{meal:F.meal});
       if(old.done){const L=S.log[k]||[],j=L.findIndex(x=>x.pid===old.id);if(j>=0)L[j]=logItem(old);}
-    }else P.push({id:uid(),...it,done:false});
+    }else P.push({id:uid(),...it,meal:F.meal,done:false});
   }else if(F.edit!=null){const pid=S.log[k][F.edit].pid;S.log[k][F.edit]={...it,pid};const p=(S.plan[k]||[]).find(x=>x.id===pid);if(p)Object.assign(p,it);}
   else(S.log[k]??=[]).push(it);
   if($('#fSave').checked&&F.edit==null){
