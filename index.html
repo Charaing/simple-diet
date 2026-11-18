@@ -112,6 +112,7 @@ body{padding-bottom:180px}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chips button{background:var(--fill);border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--sub)}
 .chips button:active{color:var(--fg)}
+.chips .reset{background:none;margin-left:auto;padding:8px 6px}
 .result{text-align:center;padding:10px 0 4px}
 .result .big{font-size:40px}
 .base{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:16px;padding:6px}
@@ -224,6 +225,7 @@ input,select,textarea{font-size:max(16px,1em)}
     <div class="f">
       <label>먹은 양</label>
       <div class="unitIn"><input id="fQty" type="number" inputmode="decimal" class="num"><span id="fQU">g</span></div>
+      <div class="hint" id="fServ"></div>
       <div class="chips" id="fChips"></div>
     </div>
     <div class="result"><div class="label">총 칼로리</div><div class="big num"><span id="fKcal">0</span><small>kcal</small></div></div>
@@ -490,9 +492,12 @@ function openFood(food,opt={}){
   $('#fBaseHint').textContent=custom?'포장지나 메뉴판에 적힌 값을 넣어 주세요. (예: 100g당 250kcal)':'포장지에 적힌 값이 다르면 고쳐도 돼요.';
   setUnit(F.u);
   const ch=$('#fChips');ch.innerHTML='';
-  const base=edit!=null?null:F.s;
-  if(base){[[.5,'반 개'],[1,`1인분 ${f1(base)}${F.u}`],[1.5,'1.5인분'],[2,'2인분']].forEach(([m,l])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#fQty').value=f1(base*m);fcalc();};ch.appendChild(b);});}
-  if(F.u==='g'||F.u==='ml')[100,200].forEach(v=>{const b=document.createElement('button');b.textContent=v+F.u;b.onclick=()=>{$('#fQty').value=v;fcalc();};ch.appendChild(b);});
+  // 누를 때마다 먹은 양에 더하기 (1인분 → +1인분 → 2인분)
+  F.base=edit!=null||custom?null:F.s;
+  const add=(l,v)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#fQty').value=f1((parseFloat($('#fQty').value)||0)+v);fcalc();};ch.appendChild(b);};
+  if(F.base){add('+1인분',F.base);add('+½인분',F.base/2);}
+  if(F.u==='g'||F.u==='ml'){add('+100'+F.u,100);add('+10'+F.u,10);}
+  const r=document.createElement('button');r.textContent='다시';r.className='reset';r.onclick=()=>{$('#fQty').value='';fcalc();$('#fQty').focus();};ch.appendChild(r);
   fcalc();open('#sFood');
   setTimeout(()=>(custom?$('#fName'):$('#fQty')).focus(),320);
 }
@@ -501,7 +506,8 @@ $('#fUnit').onclick=()=>{setUnit(F.u==='g'?'ml':'g');};
 function fcalc(){
   const per=parseFloat($('#fPer').value),pk=parseFloat($('#fPk').value),q=parseFloat($('#fQty').value);
   const ok=per>0&&pk>=0&&q>0&&(!F.custom||$('#fName').value.trim());
-  $('#fKcal').textContent=ok?fmt(pk*q/per):'0';$('#fOk').disabled=!ok;return ok?{per,pk,q,kcal:Math.round(pk*q/per)}:null;
+  $('#fKcal').textContent=ok?fmt(pk*q/per):'0';$('#fOk').disabled=!ok;
+  const sv=F.base&&q>0?q/F.base:0;$('#fServ').textContent=sv?`${f1(sv)}인분${F.u==='인분'?'':` · 1인분 ${f1(F.base)}${F.u}`}`:'';return ok?{per,pk,q,kcal:Math.round(pk*q/per)}:null;
 }
 ['#fPer','#fPk','#fQty','#fName'].forEach(s=>$(s).oninput=fcalc);
 $('#fQty').onkeydown=e=>{if(e.key==='Enter')$('#fOk').click();};
