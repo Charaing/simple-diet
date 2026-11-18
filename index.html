@@ -410,14 +410,16 @@ function showResults(){
 }
 
 /* ---------- 다이어트신 칼로리 사전 (server.py 경유) ---------- */
-// localhost로 열면 같은 서버, GitHub Pages로 열면 이 컴퓨터에서 켜둔 server.py(5178)로 물어봄
+// Cloudflare Worker 주소 (worker/README.md 참고). 비워두면 server.py로만 검색
+const DS_WORKER='';
+// localhost로 열면 같은 서버 → 아니면 Worker → 아니면 이 컴퓨터에서 켜둔 server.py(5178)
 const dsLocal=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-const DS=dsLocal?'api/ds/':'http://localhost:5178/api/ds/';
-let dsPing=null,dsSeq=0,dsT;
-function dsCheck(){ // 검색 창 열 때마다 서버가 켜져 있는지 확인
-  dsPing=fetch(DS+'ping',{signal:AbortSignal.timeout(1500)}).then(r=>r.ok).catch(()=>false);
+const DS_LIST=dsLocal?['api/ds/']:[DS_WORKER&&DS_WORKER.replace(/\/*$/,'/api/ds/'),'http://localhost:5178/api/ds/'].filter(Boolean);
+let DS=DS_LIST[0],dsPing=null,dsSeq=0,dsT;
+function dsCheck(){ // 검색 창 열 때마다 쓸 수 있는 주소 찾기
+  dsPing=(async()=>{for(const u of DS_LIST){try{const r=await fetch(u+'ping',{signal:AbortSignal.timeout(u.includes('localhost:5178')&&!dsLocal?1500:6000)});if(r.ok){DS=u;return true;}}catch{}}return false;})();
 }
-const DS_OFF='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">칼로리 사전 검색은 컴퓨터에서 <b>start.bat</b>을 켜둬야 돼요. 켜고 다시 검색해 보세요.</div>';
+const DS_OFF='<div class="sec">칼로리 사전</div><div class="hint" style="margin:6px 4px 10px">'+(DS_WORKER?'칼로리 사전에 연결하지 못했어요. 조금 뒤에 다시 검색해 보세요.':'칼로리 사전 검색은 컴퓨터에서 <b>start.bat</b>을 켜둬야 돼요. 켜고 다시 검색해 보세요.')+'</div>';
 function dsRow(f){
   return `<button class="row" data-ds="${esc(f.idx)}"><div class="t"><div class="n">${esc(f.n)}</div><div class="s">${f.b?esc(f.b)+' · ':''}1회 제공량</div></div><div class="k num">${fmt(f.kcal)}<span class="label"> kcal</span></div></button>`;
 }
