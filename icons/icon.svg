@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#1c1c20"/>
+      <stop offset="1" stop-color="#0b0b0c"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- 칼로리 링 -->
+  <circle cx="256" cy="256" r="164" fill="none" stroke="#2a2a2f" stroke-width="30"/>
+  <circle cx="256" cy="256" r="164" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round"
+          stroke-dasharray="773 1031" transform="rotate(-90 256 256)"/>
+  <!-- 젓가락 -->
+  <g stroke="#ffffff" stroke-width="13" stroke-linecap="round">
+    <line x1="300" y1="146" x2="250" y2="236"/>
+    <line x1="326" y1="156" x2="270" y2="240"/>
+  </g>
+  <!-- 그릇 -->
+  <path d="M160 248 H352 A96 96 0 0 1 256 344 A96 96 0 0 1 160 248 Z" fill="#ffffff"/>
+  <rect x="222" y="340" width="68" height="16" rx="8" fill="#ffffff"/>
+</svg>
