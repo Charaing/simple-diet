@@ -411,7 +411,7 @@ function showResults(){
 
 /* ---------- 다이어트신 칼로리 사전 (server.py 경유) ---------- */
 // Cloudflare Worker 주소 (worker/README.md 참고). 비워두면 server.py로만 검색
-const DS_WORKER='';
+const DS_WORKER='https://simple-diet-ds.suupeopiwosu.workers.dev';
 // localhost로 열면 같은 서버 → 아니면 Worker → 아니면 이 컴퓨터에서 켜둔 server.py(5178)
 const dsLocal=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 const DS_LIST=dsLocal?['api/ds/']:[DS_WORKER&&DS_WORKER.replace(/\/*$/,'/api/ds/'),'http://localhost:5178/api/ds/'].filter(Boolean);
